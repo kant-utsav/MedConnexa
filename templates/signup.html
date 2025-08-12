@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>{% load static %}
+<link rel="stylesheet" href="{% static 'styles.css' %}">
+
+  <title>Sign Up - MedConnexa</title>
+</head>
+<body>
+  <h1>Register Your Account</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn">Sign Up</button>
+    
+
+  </form>
+  <p>Already have an account? <a href="/admin/login/">Login</a></p>
+</body>
+</html>

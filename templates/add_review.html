@@ -1,0 +1,24 @@
+<style>
+.star { font-size:2em; color:#e4e4e4; cursor:pointer;}
+.star.selected { color:gold; }
+</style>
+<div id="star-rating">
+  {% for i in "12345" %}
+    <span class="star" data-value="{{ forloop.counter }}">&#9733;</span>
+  {% endfor %}
+</div>
+<input type="hidden" name="rating" id="star-rating-value">
+<script>
+const stars = document.querySelectorAll('.star');
+const input = document.getElementById('star-rating-value');
+stars.forEach(star => {
+  star.onclick = function() {
+    const val = this.getAttribute('data-value');
+    input.value = val;
+    stars.forEach(s => s.classList.remove('selected'));
+    stars.forEach((s, idx) => {
+      if(idx < val) s.classList.add('selected');
+    });
+  };
+});
+</script>

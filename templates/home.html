@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html>
+<head>
+  {% load static %}
+  <title>MedConnexa</title>
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ---- Animation related ---- */
+    body, .container-flex {
+      opacity: 0;
+      transition: opacity .72s cubic-bezier(.20,.89,.31,1.03);
+    }
+    body.page-loaded, .container-flex.page-loaded { opacity: 1; }
+
+    /* Button ripple and slight scale on click */
+    .btn, .profile-link, .conn-chat-btn, .pending-btn, .pending-btn-refuse {
+      position: relative;
+      overflow: hidden; /* enables ripple clipping */
+      transition: box-shadow 0.13s, transform 0.10s;
+      will-change: box-shadow, transform;
+    }
+    .btn:active, .profile-link:active, .conn-chat-btn:active, .pending-btn:active, .pending-btn-refuse:active {
+      transform: scale(0.96);
+      box-shadow: 0 1px 6px #22d4e857;
+    }
+    .ripple {
+      position: absolute;
+      pointer-events: none;
+      border-radius: 50%;
+      background: rgba(46,219,230,0.23);
+      animation: ripple .44s linear;
+      transform: scale(0);
+    }
+    @keyframes ripple {
+      to { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* Collapsible: slide-down/up via max-height, opacity, padding */
+    .collapsible-content {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      transition: max-height 0.37s cubic-bezier(.39,1.45,.6,1), opacity 0.25s, padding 0.3s;
+    }
+    .collapsible-section.open .collapsible-content {
+      opacity: 1;
+      padding-top: 11px;
+      padding-bottom: 7px;
+      max-height: 2000px;
+      transition: max-height 0.63s cubic-bezier(.15,.76,.59,1), opacity .35s, padding 0.17s;
+    }
+
+    /* ---- Your original styles below ---- */
+    body {
+      background: linear-gradient(120deg, #e4f7fa 0%, #f0f8fc 100%);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      color: #234;
+    }
+    .container-flex {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      max-width: 1100px;
+      margin: 42px auto 20px auto;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0 2vw;
+    }
+    .main-column {
+      flex: 2 1 420px;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 8px 28px #c4e7ee40;
+      padding: 32px 24px;
+      min-width: 330px;
+      max-width: 700px;
+      box-sizing: border-box;
+    }
+    .sidebar {
+      flex: 1 1 300px;
+      background: #e6f4fa;
+      border-radius: 22px;
+      box-shadow: 0 2px 14px #cbeefd25;
+      padding: 25px 16px 20px 16px;
+      min-width: 260px;
+      max-width: 340px;
+      margin-top: 15px;
+      box-sizing: border-box;
+    }
+    .hero {
+      text-align: center;
+      padding: 28px 0 10px 0;
+    }
+    .hero svg { width: 92px; height: 92px; margin-bottom: 10px;}
+    h1 {
+      font-weight: 700;
+      font-size: 2em;
+      color: #1ab9c9;
+      margin-bottom: 11px;
+    }
+    .nav-block {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    .btn,
+    .profile-link,
+    .my-profile-buttons .btn,
+    .conn-chat-btn,
+    .pending-btn,
+    .pending-btn-refuse {
+      display: inline-block;
+      background: linear-gradient(90deg, #4ed7e2 0%, #2ab8c2 100%);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 9px 22px;
+      margin: 0 6px 10px 0;
+      cursor: pointer;
+      font-size: 1em;
+      text-decoration: none;
+      font-weight: 500;
+      box-shadow: 0 2px 8px #cbeefd33;
+      transition: background 0.13s;
+      text-align: center;
+      min-width: 95px;
+    }
+    .profile-link { margin: 0;}
+    .btn:hover, .profile-link:hover, .conn-chat-btn:hover {
+      background: linear-gradient(90deg, #2ab8c2 0%, #4ed7e2 100%);
+    }
+    form.search-form { text-align: center; margin: 15px 0 12px 0; }
+    .search-form input[type="text"] {
+      padding: 9px 13px; width: 60%;
+      border: 1px solid #b8e0ee;
+      border-radius: 13px;
+      font-size: 1em;
+      margin-right: 8px;
+      background: #f7fbfc;
+      box-shadow: 0 1px 4px #dbeffc1a;
+    }
+    .clear-search-link {
+      font-size: 0.98em;
+      color: #128ca0;
+      margin-left: 10px;
+      text-decoration: underline;
+      vertical-align: middle;
+    }
+    h2 { text-align: center; color: #1ab9c9; font-weight: 600; margin-top: 27px; margin-bottom: 16px;}
+    .doctor-list { margin: 16px 0 0 0;}
+    .doctor-card {
+      background: #f8fcfd;
+      margin: 13px auto;
+      padding: 18px 17px;
+      border-radius: 15px;
+      box-shadow: 0 2px 12px #aef0fc13;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      max-width: 530px;
+      box-sizing: border-box;
+    }
+    .doctor-img {
+      width: 60px; height: 60px; border-radius: 50%;
+      box-shadow: 0 1px 6px #cbeefd62;
+      object-fit: cover; min-width: 60px;
+    }
+    .doc-info { flex: 1; min-width: 0;}
+    .doc-title { font-size: 1.13em; font-weight: 600; color: #198fb1;}
+    .doc-specialty { color: #17b1ad; font-size: 1.03em; margin-left: 4px;}
+    .doc-address {
+      color: #489;
+      font-size: 0.98em;
+      margin-top: 4px; margin-bottom: 4px;
+      display: flex; align-items: center; gap: 7px;
+      word-break: break-word;
+    }
+    /* Sidebar */
+    .my-profile-block { text-align: center; padding: 2px 6px 4px 6px;}
+    .my-profile-label {
+      background: linear-gradient(90deg,#4ed7e277 0%,#2ab8c277 100%);
+      color: #169599;
+      font-size: 1.13em;
+      font-weight:600;
+      border-radius: 8px;
+      padding: 6px 18px;
+      display:inline-block;
+      margin-bottom: 8px;
+      letter-spacing: 0.3px;
+      margin-top: 5px;
+    }
+    .my-doc-img {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px #cbeefd66;
+      object-fit: cover;
+      display: block;
+      margin: 0 auto 7px auto;
+    }
+    .my-doc-title { font-size: 1.2em; font-weight: 700; color: #198fb1; margin-bottom:2px; }
+    .my-doc-specialty { color: #1ab9c9; font-size: .97em; margin-bottom:3px; display:block; }
+    .my-doc-address { color: #489; font-size:.96em; margin-bottom:3px;}
+    .my-profile-buttons { text-align:center; margin-top:12px;}
+    .my-profile-buttons .btn { margin-bottom: 3px; min-width: 120px;}
+    /* Collapsibles and notifications */
+    .collapsible-section {
+      border-radius: 8px;
+      background: #f8fcfd;
+      margin-top: 13px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 8px #e6eefd23;
+    }
+    .collapsible-header {
+      background: #eaf6fa;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 10px 14px 10px 20px;
+      font-size: 1.03em;
+      user-select: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      outline: none;
+      border-bottom: 1px solid #cbeefd55;
+      color: #169599;
+      margin: 0;
+    }
+    .collapsible-header .fa { margin-right:7px; }
+    .connected-doctor {
+      display: flex; align-items: center; gap: 9px;
+      margin-bottom: 10px; border-bottom: 1px solid #e4f7fa;
+      padding-bottom: 5px; min-width: 0;
+    }
+    .connected-doctor:last-child { border-bottom: none; margin-bottom: 4px;}
+    .connected-img {
+      width: 34px; height:34px; border-radius:50%; object-fit:cover;
+      margin-right:5px; min-width: 34px; box-shadow: 0 1px 4px #b2e6f7;
+    }
+    .connected-doctor-info { flex:1; display:flex; flex-direction:column; overflow:hidden;}
+    .conn-doc-name { font-weight:600; color:#178faa;}
+    .conn-doc-specialty { color:#1ab9c9; font-size:.98em;}
+    .conn-chat-btn {
+      min-width: 0;
+      padding: 5px 11px;
+      font-size: .96em;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #25b790 0%, #15a7ec 100%);
+      color: #fff !important;
+      font-weight: 500;
+      margin-left: 4px;
+      text-decoration: none;
+      box-shadow: 0 1px 3px #b2e6f7;
+    }
+    .conn-chat-btn:hover { background: linear-gradient(90deg, #15a7ec 0%, #25b790 100%);}
+    .pending-request {
+      display: flex; align-items: center; gap:8px; margin-bottom:8px;
+      border-bottom:1px solid #f2f3fa; padding-bottom:6px;
+    }
+    .pending-avatar { width:28px; height:28px; border-radius:50%; object-fit:cover; min-width:28px; }
+    .pending-btn {
+      padding: 3px 10px; font-size:.94em; border-radius:6px; margin-left:2px;
+      font-weight: 500; border: none; color: #fff; background: #12c184;
+      cursor: pointer; box-shadow: 0 0.5px 2px #b2e6f7; text-align: center;
+    }
+    .pending-btn:hover { background: #16adff;}
+    .pending-btn-refuse {
+      background: #ffa3b5;
+      color: #99172d;
+      margin-left: 4px;
+    }
+    .pending-btn-refuse:hover { background: #fc758e;}
+    .sidebar .notif-messages {
+      background: #e7f7ff;
+      border-radius: 7px;
+      padding: 10px 14px;
+      color: #1c90ae;
+      font-weight: 500;
+      margin: 13px 0 10px 0;
+    }
+    .sidebar .notif-messages ul {
+      margin-top: 5px;
+      padding-left: 16px;
+      font-size: .99em;
+      text-align: left;
+    }
+    .sidebar .notif-btn-chat {
+      background: #1ab9c9;
+      color:#fff;
+      padding: 5px 10px;
+      font-size:.97em;
+      margin-left:7px;
+      border-radius: 7px;
+      border: none;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .sidebar .notif-btn-chat:hover { background: #178faa;}
+    @media (max-width:1049px) {
+      .container-flex { flex-direction: column; gap:11px;}
+      .sidebar, .main-column { max-width: 97vw; padding:3vw 4vw; margin-top:10px;}
+      .sidebar { margin-top:32px;}
+      .main-column {margin-bottom:10px;}
+    }
+    @media (max-width:700px) {
+      .container-flex { flex-direction: column; padding:0;}
+      .main-column, .sidebar { padding: 2vw 1vw;}
+      input[type="text"] { width:97%;}
+      .doctor-card { flex-direction:column; align-items:flex-start; gap:13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container-flex">
+    <div class="main-column">
+      <div class="hero">
+        <svg viewBox="0 0 96 96" fill="none">
+          <circle cx="48" cy="48" r="42" fill="#e6f4fa"/>
+          <ellipse cx="48" cy="55" rx="30" ry="28" fill="#f8fcfd"/>
+          <ellipse cx="48" cy="44" rx="18" ry="15.5" fill="#ceecf2"/>
+          <ellipse cx="48" cy="39" rx="12" ry="12" fill="#f8fcfd"/>
+          <circle cx="48" cy="38" r="9" fill="#b2e6f7"/>
+          <ellipse cx="48" cy="70" rx="15" ry="8" fill="#cbeefd"/>
+          <path d="M40 68 Q44.5 72 48 72 51.5 72 56 68" stroke="#1ab9c9" stroke-width="2" fill="none"/>
+          <circle cx="42" cy="68" r="3" fill="#fff" stroke="#29c7d6" stroke-width="2"/>
+          <circle cx="54" cy="68" r="3" fill="#fff" stroke="#29c7d6" stroke-width="2"/>
+        </svg>
+        <h1>Welcome to MedConnexa</h1>
+        <div style="font-size:1.08em;color:#198fb1;margin-bottom:3px;">Your trusted doctor connection platform</div>
+      </div>
+      <div class="nav-block">
+        {% if user.is_authenticated %}
+          <form action="{% url 'logout' %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button class="btn">Logout</button>
+          </form>
+        {% else %}
+          <a href="{% url 'signup' %}" class="btn">Sign Up</a>
+          <a href="{% url 'login' %}" class="btn">Login</a>
+        {% endif %}
+      </div>
+      <form method="get" class="search-form">
+        <input type="text" name="search" placeholder="Search for doctors or clinics" value="{{ request.GET.search }}">
+        <button class="btn" type="submit">Search</button>
+        {% if request.GET.search %}
+          <a href="{% url 'home' %}" class="clear-search-link">Clear Search</a>
+        {% endif %}
+      </form>
+      <h2>Available Doctors</h2>
+      <div class="doctor-list">
+        {% if doctors %}
+          {% for doctor in doctors %}
+            {% if not user.is_authenticated or doctor.user != user %}
+              <div class="doctor-card">
+                {% if doctor.photo %}
+                  <img src="{{ doctor.photo.url }}" alt="Doctor Photo" class="doctor-img">
+                {% else %}
+                  <svg class="doctor-img" viewBox="0 0 96 96" fill="none">
+                    <circle cx="48" cy="48" r="42" fill="#e6f4fa"/>
+                    <ellipse cx="48" cy="55" rx="30" ry="28" fill="#f8fcfd"/>
+                    <ellipse cx="48" cy="44" rx="18" ry="15.5" fill="#ceecf2"/>
+                    <circle cx="48" cy="38" r="9" fill="#b2e6f7"/>
+                  </svg>
+                {% endif %}
+                <div class="doc-info">
+                  <div class="doc-title">
+                    {{ doctor.name }}
+                    <span class="doc-specialty">{{ doctor.specialty }}</span>
+                  </div>
+                  <div class="doc-address">
+                    <i class="fa fa-location-dot" style="color:#17b1ad;"></i> {{ doctor.clinic_address }}
+                  </div>
+                  <a class="btn profile-link" href="{% url 'doctor_profile' doctor.id %}">View Profile</a>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          <p style="text-align:center; color:#999; margin-top:28px;">No doctors found!</p>
+        {% endif %}
+      </div>
+    </div>
+    {% if user.is_authenticated and user.doctor %}
+    <div class="sidebar">
+      <div class="my-profile-block">
+        <div class="my-profile-label"><i class="fa fa-user-md"></i> My Profile</div>
+        {% if user.doctor.photo %}
+          <img src="{{ user.doctor.photo.url }}" alt="Doctor Photo" class="my-doc-img">
+        {% else %}
+          <svg class="my-doc-img" viewBox="0 0 96 96" fill="none">
+            <circle cx="48" cy="48" r="42" fill="#e6f4fa"/>
+            <ellipse cx="48" cy="55" rx="30" ry="28" fill="#f8fcfd"/>
+            <ellipse cx="48" cy="44" rx="18" ry="15.5" fill="#ceecf2"/>
+            <circle cx="48" cy="38" r="9" fill="#b2e6f7"/>
+          </svg>
+        {% endif %}
+        <div class="my-doc-title">{{ user.doctor.name }}</div>
+        <span class="my-doc-specialty">{{ user.doctor.specialty }}</span>
+        <div class="my-doc-address"><i class="fa fa-location-dot"></i> {{ user.doctor.clinic_address }}</div>
+        <div class="my-profile-buttons">
+          <a class="btn" href="{% url 'doctor_profile' user.doctor.id %}">View Full Profile</a>
+          <a class="btn" href="{% url 'edit_doctor' %}">Edit Profile</a>
+        </div>
+        
+        <!-- Unread Message Alerts -->
+        {% if unread_messages %}
+          <div class="notif-messages">
+            <i class="fa fa-envelope"></i> {{ unread_messages|length }} New Message{{ unread_messages|length|pluralize }}
+            <ul>
+              {% for msg in unread_messages|slice:":3" %}
+                <li>
+                  From <b>{{ msg.sender.name }}</b>
+                  <a class="notif-btn-chat" href="{% url 'chat' msg.sender.id %}">Open Chat</a>
+                </li>
+              {% endfor %}
+              {% if unread_messages|length > 3 %}
+                <li>And {{ unread_messages|length|add:"-3" }} more...</li>
+              {% endif %}
+            </ul>
+          </div>
+        {% endif %}
+        
+        <!-- CONNECTED DOCTORS COLLAPSIBLE -->
+        <div class="collapsible-section" id="connectedSection">
+          <button class="collapsible-header" type="button" onclick="toggleCollapse('connectedSection')">
+            <i class="fa fa-user-friends"></i> Connected Doctors to Chat With
+            <span style="float:right;">
+              <i class="fa fa-caret-down"></i>
+            </span>
+          </button>
+          <div class="collapsible-content">
+            {% if connected_doctors %}
+              {% for conn in connected_doctors %}
+                {% if conn.from_doctor == user.doctor %}
+                  {% with other=conn.to_doctor %}
+                    <div class="connected-doctor">
+                      {% if other.photo %}
+                        <img src="{{ other.photo.url }}" class="connected-img" alt="Doctor Pic">
+                      {% else %}
+                        <svg class="connected-img" viewBox="0 0 96 96" fill="none">
+                          <circle cx="48" cy="48" r="42" fill="#e6f4fa"/>
+                          <ellipse cx="48" cy="55" rx="30" ry="28" fill="#f8fcfd"/>
+                          <circle cx="48" cy="38" r="9" fill="#b2e6f7"/>
+                        </svg>
+                      {% endif %}
+                      <div class="connected-doctor-info">
+                        <div class="conn-doc-name">{{ other.name }}</div>
+                        <span class="conn-doc-specialty">{{ other.specialty }}</span>
+                      </div>
+                      <a class="conn-chat-btn" href="{% url 'chat' other.id %}">
+                        <i class="fa fa-comments"></i> Chat
+                      </a>
+                    </div>
+                  {% endwith %}
+                {% else %}
+                  {% with other=conn.from_doctor %}
+                    <div class="connected-doctor">
+                      {% if other.photo %}
+                        <img src="{{ other.photo.url }}" class="connected-img" alt="Doctor Pic">
+                      {% else %}
+                        <svg class="connected-img" viewBox="0 0 96 96" fill="none">
+                          <circle cx="48" cy="48" r="42" fill="#e6f4fa"/>
+                          <ellipse cx="48" cy="55" rx="30" ry="28" fill="#f8fcfd"/>
+                          <circle cx="48" cy="38" r="9" fill="#b2e6f7"/>
+                        </svg>
+                      {% endif %}
+                      <div class="connected-doctor-info">
+                        <div class="conn-doc-name">{{ other.name }}</div>
+                        <span class="conn-doc-specialty">{{ other.specialty }}</span>
+                      </div>
+                      <a class="conn-chat-btn" href="{% url 'chat' other.id %}">
+                        <i class="fa fa-comments"></i> Chat
+                      </a>
+                    </div>
+                  {% endwith %}
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <div style="color:#aaa; text-align:center;">No connected doctors yet.</div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- PENDING CONNECTION REQUESTS COLLAPSIBLE -->
+        <div class="collapsible-section" id="pendingSection">
+          <button class="collapsible-header" type="button" onclick="toggleCollapse('pendingSection')">
+            <i class="fa fa-clock"></i> Pending Requests
+            <span style="float:right;">
+              <i class="fa fa-caret-down"></i>
+            </span>
+          </button>
+          <div class="collapsible-content">
+            {% if pending_requests %}
+              {% for req in pending_requests %}
+                {% if req.from_doctor == user.doctor %}
+                  <div class="pending-request">
+                    {% if req.to_doctor.photo %}
+                      <img src="{{ req.to_doctor.photo.url }}" class="pending-avatar" alt="Doctor Pic">
+                    {% else %}
+                      <svg class="pending-avatar" viewBox="0 0 96 96" fill="none">
+                        <circle cx="48" cy="48" r="42" fill="#e6f4fa"/>
+                        <ellipse cx="48" cy="55" rx="30" ry="28" fill="#f8fcfd"/>
+                        <circle cx="48" cy="38" r="9" fill="#b2e6f7"/>
+                      </svg>
+                    {% endif %}
+                    <span>To <b>{{ req.to_doctor.name }}</b></span>
+                    <span style="margin-left:auto;color:#b99817;font-style:italic;">Requested</span>
+                  </div>
+                {% else %}
+                  <div class="pending-request">
+                    {% if req.from_doctor.photo %}
+                      <img src="{{ req.from_doctor.photo.url }}" class="pending-avatar" alt="Doctor Pic">
+                    {% else %}
+                      <svg class="pending-avatar" viewBox="0 0 96 96" fill="none">
+                        <circle cx="48" cy="48" r="42" fill="#e6f4fa"/>
+                        <ellipse cx="48" cy="55" rx="30" ry="28" fill="#f8fcfd"/>
+                        <circle cx="48" cy="38" r="9" fill="#b2e6f7"/>
+                      </svg>
+                    {% endif %}
+                    <span>From <b>{{ req.from_doctor.name }}</b></span>
+                    <a class="pending-btn" href="{% url 'accept_connection_request' req.id %}">Accept</a>
+                    <a class="pending-btn pending-btn-refuse" href="{% url 'refuse_connection_request' req.id %}">Refuse</a>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <div style="color:#aaa; text-align:center;">No pending requests.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <script>
+    // Page fade-in/ready & button ripple animation
+    document.addEventListener("DOMContentLoaded", function () {
+      document.body.classList.add("page-loaded");
+      var flex = document.querySelector(".container-flex");
+      if (flex) flex.classList.add("page-loaded");
+
+      // Button ripple for all major buttons and links
+      document.querySelectorAll(".btn, .profile-link, .conn-chat-btn, .pending-btn, .pending-btn-refuse").forEach(function(btn){
+        btn.addEventListener("click", function(e){
+          if(btn.querySelector(".ripple")) btn.removeChild(btn.querySelector(".ripple"));
+          var ripple=document.createElement("span");
+          var rect=btn.getBoundingClientRect();
+          var size=Math.max(rect.width,rect.height);
+          ripple.className="ripple";
+          ripple.style.width=ripple.style.height=size+'px';
+          ripple.style.left=(e.offsetX-size/2)+'px';
+          ripple.style.top=(e.offsetY-size/2)+'px';
+          btn.appendChild(ripple);
+          setTimeout(function(){ if(btn.contains(ripple)) btn.removeChild(ripple); },420);
+        },false);
+      });
+    });
+
+    // Collapsible toggling and slide-in
+    function toggleCollapse(sectionId) {
+      var section = document.getElementById(sectionId);
+      section.classList.toggle('open');
+      var caret = section.querySelector(".collapsible-header .fa-caret-down, .collapsible-header .fa-caret-up");
+      if (caret) {
+        caret.classList.toggle('fa-caret-down');
+        caret.classList.toggle('fa-caret-up');
+      }
+    }
+    // Optionally start collapsibles closed on page load
+    document.addEventListener("DOMContentLoaded", function(){
+      document.getElementById('connectedSection').classList.remove('open');
+      document.getElementById('pendingSection').classList.remove('open');
+    });
+  </script>
+</body>
+</html>

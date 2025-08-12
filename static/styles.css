@@ -1,0 +1,66 @@
+body {
+  background: linear-gradient(135deg, #f8fafc 0%, #e0f7fa 100%);
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #233a42;
+  margin: 0;
+}
+
+.hero {
+  padding: 36px 0 16px;
+  text-align: center;
+  background: linear-gradient(100deg, #f8fafc 60%, #d9f9f6 100%);
+}
+
+.hero-graphic {
+  width: 120px;
+  margin-bottom: 18px;
+}
+
+.card {
+  border-radius: 18px;
+  box-shadow: 0 4px 16px #b9e7e066;
+  background: linear-gradient(120deg, #fff 0%, #e6f5fb 100%);
+  margin: 18px;
+  padding: 26px;
+  transition: box-shadow 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 8px 24px #9ad4b8bb;
+  transform: translateY(-3px) scale(1.02);
+}
+
+.btn {
+  background: linear-gradient(90deg, #64b5f6, #7ed957);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 32px;
+  font-size: 1.1rem;
+  margin-top: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 8px #b9e7e066;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn:hover {
+  background: linear-gradient(90deg, #4fa3e2, #4dcc43);
+  transform: scale(1.04);
+}
+
+nav {
+  background: #fffde4;
+  border-bottom: 1px solid #e7ecf9;
+  padding: 14px 28px;
+  border-radius: 0 0 22px 22px;
+  margin-bottom: 28px;
+}
+
+input, textarea, select {
+  border-radius: 6px;
+  border: 1px solid #d1ecf1;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}

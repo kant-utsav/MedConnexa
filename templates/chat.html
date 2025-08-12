@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+  {% load static %}
+  <title>Chat with {{ other_doctor.name }} - MedConnexa</title>
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body, .chat-whatsapp-frame {
+      opacity: 0;
+      transition: opacity 0.8s cubic-bezier(.22,1.2,.42,1);
+    }
+    body.page-loaded, .chat-whatsapp-frame.page-loaded { opacity: 1; }
+    body {
+      background: linear-gradient(120deg, #e0f6ff 0%, #f7fafd 100%);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #202c37;
+      margin: 0;
+      height: 100vh;
+      min-height: 100svh;
+    }
+    .chat-whatsapp-frame {
+      width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(120deg,#b0e2ee 0%,#f0f8fc 80%);
+      overflow: auto;
+      padding: 0;
+    }
+    .chat-window-wp {
+      width: 560px; max-width: 98vw; height: 88vh; min-height: 500px;
+      background: #fdfefe;
+      border-radius: 17px;
+      box-shadow: 0 8px 38px #188cf343;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    /* Header as in WhatsApp */
+    .chat-header {
+      background: #1ab9c9;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 20px 32px 13px 22px;
+      border-bottom: 1.5px solid #e5f7fa;
+      gap: 18px;
+      min-height: 70px;
+      position: relative;
+    }
+    .chat-avatar { width: 48px; height:48px; border-radius:50%; object-fit:cover; box-shadow:0 1px 9px #1ab9c963; background: #fff; }
+    .chat-header .chat-doc-name { font-weight: 650; font-size: 1.18em; line-height: 1.1;}
+    .chat-header .chat-doc-specialty { font-size:.96em; opacity:.83; color: #e1fbff;}
+    .chat-header .back-link {
+      position: absolute;
+      top: 15px;
+      right: 22px;
+      font-size: 1.05em;
+      color: #eee;
+      opacity: .72;
+      font-weight: 540;
+      text-decoration: none;
+      background: none;
+      border: 0;
+      cursor: pointer;
+      transition: color 0.13s;
+    }
+    .chat-header .back-link:hover { color: #4ed7e2; }
+    /* Chat main area */
+    .chat-main {
+      flex: 1;
+      background: #e4f5f8 url('https://i.ibb.co/pPWNx1j/wabg-light.png') repeat;
+      background-size: 370px 370px;
+      padding: 28px 0 15px 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      position: relative;
+      box-sizing: border-box;
+    }
+    @media (max-width:700px) {.chat-main {padding-left:0; padding-right:0;}}
+    .chat-msg-row {
+      display:flex;
+      align-items:flex-end;
+      margin: 0 12px 2px 12px;
+    }
+    /* --- Bubble style: WhatsApp-like --- */
+    .chat-msg-bubble {
+      padding: 8px 17px 8px 17px;
+      border-radius: 18px 18px 8px 18px;
+      font-size: 1.017em;
+      max-width: 64vw; max-width: 435px;
+      word-break:break-word;
+      margin-bottom: 0.5em;
+      margin-top: 2px;
+      background: #fff;
+      box-shadow: 0px 1.2px 11px #b2dfec0f;
+      border: none;
+      display:block;
+      position:relative;
+      white-space: pre-wrap;
+      min-width: 40px;
+      line-height: 1.48;
+      transition: background 0.16s;
+    }
+    .chat-msg-sent {
+      margin-left: auto;
+      background: linear-gradient(120deg, #d2ffef 0%, #c1fff5 100%);
+      color: #173;
+      border-bottom-right-radius: 5px;
+      border-bottom-left-radius: 15px;
+      border-top-left-radius: 19px;
+      border-top-right-radius: 21px;
+      border: 1px solid #c2ffe8;
+      animation: chatSentFade .36s;
+    }
+    .chat-msg-recv {
+      margin-right: auto;
+      background: #fff;
+      color: #198fb1;
+      border-bottom-left-radius: 5px;
+      border-bottom-right-radius: 15px;
+      border-top-right-radius: 19px;
+      border-top-left-radius: 21px;
+      border: 1px solid #e4f7fa;
+      animation: chatRecvFade .33s;
+    }
+    @keyframes chatSentFade { from{opacity:.2; transform:translateX(17px);} to{opacity:1;transform:none;} }
+    @keyframes chatRecvFade { from{opacity:.08; transform:translateY(18px);} to{opacity:1;transform:none;} }
+    .chat-msg-meta {
+      font-size: .87em; color: #25b790; opacity: .57; margin:0 5px 2px 4px;
+      text-align:right; white-space:nowrap; }
+    .chat-msg-bubble .chat-attachment { margin-top:7px; display:block;}
+    .chat-msg-bubble .chat-attachment img {
+      max-width:170px; max-height:110px;
+      border-radius: 10px; box-shadow: 0 1px 10px #26ccd311; margin-bottom:4px;
+      background:#d3f7fe; border:1.2px solid #caf;
+    }
+    .chat-msg-bubble .fa-file { font-size:1.4em; color:#1ab9c9;}
+    /* Input/footer */
+    .chat-footer {
+      padding: 10px 14px 11px 14px; background: #f0fbf8;
+      border-top: 1.5px solid #e7faf9;
+      position: relative;
+    }
+    .chat-input-row {
+      display: flex; align-items: flex-end; gap: 10px; width: 100%;
+    }
+    .chat-input-row textarea {
+      flex: 1; border-radius: 16px;
+      border: 1.22px solid #d0ecec; font-size:1.07em; padding: 10px 13px;
+      min-height: 36px; max-height: 82px; resize: vertical;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+    .chat-input-row textarea:focus { border-color: #4ed7e2; }
+    .chat-send-btn {
+      background: linear-gradient(90deg,#16cf9c 0%, #1ab9c9 100%);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 11px 21px;
+      font-size: 1.06em;
+      font-weight: 650;
+      cursor: pointer;
+      box-shadow: 0 1px 6px #bfe8ee1e;
+      margin-left: 7px;
+      transition: background 0.15s, transform 0.13s;
+      position: relative;
+      overflow: hidden;
+      min-width: 80px;
+    }
+    .chat-send-btn:active { transform:scale(.96); box-shadow:0 1px 5px #15e7e029;}
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(46,219,230,0.20);
+      animation: ripple .43s linear;
+      pointer-events: none;
+      transform: scale(0);
+    }
+    .chat-emoji-btn {
+      background:none; border:none; color:#1ab9c9; font-size:1.38em; cursor:pointer; padding:0 8px 0 0; vertical-align:middle; transition:color 0.12s;
+    }
+    .chat-emoji-btn:active { transform:scale(.92);}
+    .emoji-picker { position:absolute; bottom:54px; left:19px; z-index:222; background:#fff; border-radius:13px; box-shadow:0 2px 18px #b2e6f799; padding:6px 7px; max-width:260px; display:none;}
+    .emoji-picker span { font-size: 1.27em; cursor: pointer; padding:2px 4px; margin:2px; transition:background 0.14s; border-radius:7px;}
+    .emoji-picker span:hover { background:#b2e6f7; }
+    .chat-file-input { display: flex; align-items: center; gap:6px; margin-top: 7px; }
+    .chat-file-label { color:#199cb6; font-size:1.01em; cursor:pointer; }
+    .chat-file-preview { margin-top:2px; font-size:.98em;}
+    @media (max-width:900px) {
+      .chat-window-wp { width: 95vw; min-width: 0;}
+      .chat-header { padding-left: 11vw; padding-right: 9vw;}
+    }
+    @media (max-width:700px) {
+      .chat-window-wp { max-width:100vw; min-width:0; width:100vw;}
+      .chat-footer, .chat-main, .chat-header { padding-left:4vw; padding-right:4vw;}
+      .chat-main {padding-left:0; padding-right:0;}
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-whatsapp-frame">
+    <div class="chat-window-wp">
+      <div class="chat-header">
+        {% if other_doctor.photo %}
+          <img src="{{ other_doctor.photo.url }}" class="chat-avatar" alt="Doctor Photo">
+        {% else %}
+          <svg class="chat-avatar" viewBox="0 0 96 96" fill="none">
+            <circle cx="48" cy="48" r="42" fill="#e6f4fa"/>
+            <ellipse cx="48" cy="55" rx="30" ry="28" fill="#f8fcfd"/>
+            <circle cx="48" cy="38" r="9" fill="#b2e6f7"/>
+          </svg>
+        {% endif %}
+        <div style="flex:1;">
+          <div class="chat-doc-name">{{ other_doctor.name }}</div>
+          <div class="chat-doc-specialty">{{ other_doctor.specialty }}</div>
+        </div>
+        <a class="back-link" href="{% url 'home' %}"><i class="fa fa-arrow-left"></i> Home</a>
+      </div>
+      <!-- Chat message area -->
+      <div class="chat-main" id="chat-main">
+        {% for msg in messages %}
+          {% if msg.sender == user.doctor %}
+            <div class="chat-msg-row" style="justify-content: flex-end;">
+              <div class="chat-msg-bubble chat-msg-sent">
+                {{ msg.text|linebreaksbr }}
+                {% if msg.attachment %}
+                  <span class="chat-attachment">
+                    {% if msg.attachment.url|lower|slice:"-4:" == ".jpg" or msg.attachment.url|lower|slice:"-5:" == ".jpeg" or msg.attachment.url|lower|slice:"-4:" == ".png" or msg.attachment.url|lower|slice:"-4:" == ".gif" %}
+                      <img src="{{ msg.attachment.url }}" alt="img">
+                    {% else %}
+                      <a href="{{ msg.attachment.url }}" target="_blank">
+                        <i class="fa fa-file"></i> {{ msg.attachment.name|default:"File" }}
+                      </a>
+                    {% endif %}
+                  </span>
+                {% endif %}
+                <div class="chat-msg-meta">
+                  {{ msg.timestamp|date:"H:i, d M Y" }}&nbsp;You
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="chat-msg-row" style="justify-content: flex-start;">
+              <div class="chat-msg-bubble chat-msg-recv">
+                {{ msg.text|linebreaksbr }}
+                {% if msg.attachment %}
+                  <span class="chat-attachment">
+                    {% if msg.attachment.url|lower|slice:"-4:" == ".jpg" or msg.attachment.url|lower|slice:"-5:" == ".jpeg" or msg.attachment.url|lower|slice:"-4:" == ".png" or msg.attachment.url|lower|slice:"-4:" == ".gif" %}
+                      <img src="{{ msg.attachment.url }}" alt="img">
+                    {% else %}
+                      <a href="{{ msg.attachment.url }}" target="_blank">
+                        <i class="fa fa-file"></i> {{ msg.attachment.name|default:"File" }}
+                      </a>
+                    {% endif %}
+                  </span>
+                {% endif %}
+                <div class="chat-msg-meta">
+                  {{ msg.timestamp|date:"H:i, d M Y" }}&nbsp;{{ other_doctor.name }}
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% empty %}
+          <div style="text-align:center; color:#999; margin-top:50px;">No messages yet. Start a chat below.</div>
+        {% endfor %}
+      </div>
+      <form method="post" class="chat-footer" autocomplete="off" enctype="multipart/form-data" style="border-radius:0 0 22px 22px;">
+        {% csrf_token %}
+        <div class="chat-input-row">
+          <button type="button" class="chat-emoji-btn" onclick="toggleEmojiPicker()" title="Insert Emoji">😀</button>
+          <textarea name="text" id="msgInput" rows="1" placeholder="Type your message..." required></textarea>
+          <button type="submit" class="chat-send-btn"><i class="fa fa-paper-plane"></i> Send</button>
+        </div>
+        <div class="chat-file-input">
+          <label class="chat-file-label">
+            <i class="fa fa-paperclip"></i> Attach
+            <input type="file" name="attachment" style="display:none;" onchange="showFileName(this)">
+          </label>
+          <span class="chat-file-preview" id="filePreview"></span>
+        </div>
+        <div class="emoji-picker" id="emojiPicker">
+          <span onclick="insertEmoji('😀')">😀</span><span onclick="insertEmoji('😃')">😃</span>
+          <span onclick="insertEmoji('😂')">😂</span><span onclick="insertEmoji('😍')">😍</span>
+          <span onclick="insertEmoji('🤩')">🤩</span><span onclick="insertEmoji('😎')">😎</span>
+          <span onclick="insertEmoji('🥳')">🥳</span><span onclick="insertEmoji('👍')">👍</span>
+          <span onclick="insertEmoji('🙏')">🙏</span><span onclick="insertEmoji('💡')">💡</span>
+          <span onclick="insertEmoji('📎')">📎</span><span onclick="insertEmoji('❤️')">❤️</span>
+          <span onclick="insertEmoji('😊')">😊</span><span onclick="insertEmoji('🎉')">🎉</span>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+    // WhatsApp-like: page fade-in and button ripple
+    document.addEventListener("DOMContentLoaded", function () {
+      document.body.classList.add("page-loaded");
+      var c = document.querySelector(".chat-whatsapp-frame"); if (c) c.classList.add("page-loaded");
+      var btns = document.querySelectorAll(".chat-send-btn, .btn, .profile-link");
+      btns.forEach(function(btn){
+        btn.addEventListener("click", function(e){
+          if (btn.querySelector(".ripple")) btn.removeChild(btn.querySelector(".ripple"));
+          var ripple=document.createElement("span");
+          var size=Math.max(btn.offsetWidth,btn.offsetHeight);
+          ripple.className="ripple";
+          ripple.style.width=ripple.style.height=size+'px';
+          ripple.style.left=(e.offsetX-size/2)+'px';
+          ripple.style.top=(e.offsetY-size/2)+'px';
+          btn.appendChild(ripple);
+          setTimeout(function(){ if(btn.contains(ripple)) btn.removeChild(ripple); }, 410);
+        },false);
+      });
+      // Auto-scroll to bottom on page load
+      var chatMain = document.getElementById("chat-main");
+      if(chatMain) chatMain.scrollTop = chatMain.scrollHeight;
+    });
+    // Show attachment file name
+    function showFileName(input) {
+      var label = document.getElementById("filePreview");
+      if(input.files.length > 0) label.textContent = input.files[0].name;
+      else label.textContent = "";
+    }
+    // Simple emoji picker
+    function toggleEmojiPicker() {
+      var picker = document.getElementById("emojiPicker");
+      if (picker) picker.style.display = (picker.style.display === "block") ? "none" : "block";
+    }
+    function insertEmoji(emoji) {
+      var input = document.getElementById("msgInput");
+      var start = input.selectionStart, end = input.selectionEnd;
+      var val = input.value;
+      input.value = val.substring(0, start) + emoji + val.substring(end);
+      input.focus();
+      document.getElementById("emojiPicker").style.display = "none";
+    }
+    document.addEventListener('click', function(e){
+      var picker = document.getElementById("emojiPicker");
+      var btn = document.querySelector('.chat-emoji-btn');
+      if(picker && picker.style.display === "block" && !picker.contains(e.target) && e.target!==btn){
+        picker.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
